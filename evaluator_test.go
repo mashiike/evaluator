@@ -12,15 +12,26 @@ func TestEvaluatorSuccess(t *testing.T) {
 	cases := []struct {
 		expr      string
 		variables []evaluator.Variables
-		expected  []bool
+		expected  []interface{}
 	}{
+		{
+			expr: "var1",
+			variables: []evaluator.Variables{
+				{"var1": 1},
+				{"var1": 3},
+			},
+			expected: []interface{}{
+				1,
+				3,
+			},
+		},
 		{
 			expr: "var1 <= var2",
 			variables: []evaluator.Variables{
 				{"var1": 1, "var2": 2},
 				{"var1": 3, "var2": 1},
 			},
-			expected: []bool{
+			expected: []interface{}{
 				true,
 				false,
 			},

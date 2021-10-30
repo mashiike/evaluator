@@ -28,12 +28,27 @@ func TestEvaluatorSuccess(t *testing.T) {
 		{
 			expr: "var1 <= var2",
 			variables: []evaluator.Variables{
+				{"var1": "abc", "var2": "def"},
 				{"var1": 1, "var2": 2},
 				{"var1": 3, "var2": 1},
 			},
 			expected: []interface{}{
 				true,
+				true,
 				false,
+			},
+		},
+		{
+			expr: "var1 >= var2",
+			variables: []evaluator.Variables{
+				{"var1": "abc", "var2": "def"},
+				{"var1": 1, "var2": 2},
+				{"var1": 3, "var2": 1},
+			},
+			expected: []interface{}{
+				false,
+				false,
+				true,
 			},
 		},
 	}

@@ -41,6 +41,7 @@ func TestEvaluatorSuccess(t *testing.T) {
 		t.Run(c.expr, func(t *testing.T) {
 			e, err := evaluator.New(c.expr)
 			require.NoError(t, err, "must parse success")
+			t.Logf("%s", e)
 			for i, v := range c.variables {
 				actual, err := e.Eval(v)
 				require.NoErrorf(t, err, "must eval sucess, variables case %d", i)

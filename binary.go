@@ -22,19 +22,19 @@ func getComparativeFunc(op token.Token) (comparativeFunc, bool) {
 		}, true
 	case token.LEQ: // <=
 		return func(v1, v2 interface{}) (bool, error) {
-			ret, err := equalComparativeFunc(v1, v2)
+			ret, err := lssComparativeFunc(v1, v2)
 			if err != nil || ret {
 				return ret, err
 			}
-			return lssComparativeFunc(v1, v2)
+			return equalComparativeFunc(v1, v2)
 		}, true
 	case token.GEQ: // >=
 		return func(v1, v2 interface{}) (bool, error) {
-			ret, err := equalComparativeFunc(v1, v2)
+			ret, err := gtrComparativeFunc(v1, v2)
 			if err != nil || ret {
 				return ret, err
 			}
-			return gtrComparativeFunc(v1, v2)
+			return equalComparativeFunc(v1, v2)
 		}, true
 	default:
 		return nil, false
@@ -90,14 +90,26 @@ func isRealNumber(v interface{}) (float64, bool) {
 	}
 }
 
+func isBothBools(v1, v2 interface{}) (b1, b2, ok bool) {
+	b1, ok = v1.(bool)
+	if !ok {
+		return
+	}
+	b2, ok = v2.(bool)
+	return
+}
+
 func equalComparativeFunc(v1, v2 interface{}) (bool, error) {
+	if b1, b2, ok := isBothBools(v1, v2); ok {
+		return b1 == b2, nil
+	}
 	if s1, s2, ok := isBothStrings(v1, v2); ok {
 		return s1 == s2, nil
 	}
 	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
 		return n1 == n2, nil
 	}
-	return false, fmt.Errorf("v1[%v] and v2[%v] can not `==` comparatable", v1, v2)
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `==` comparatable", v1, v1, v2, v2)
 }
 
 func lssComparativeFunc(v1, v2 interface{}) (bool, error) {
@@ -107,7 +119,7 @@ func lssComparativeFunc(v1, v2 interface{}) (bool, error) {
 	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
 		return n1 < n2, nil
 	}
-	return false, fmt.Errorf("v1[%v] and v2[%v] can not `<` comparatable", v1, v2)
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `<` comparatable", v1, v1, v2, v2)
 }
 
 func gtrComparativeFunc(v1, v2 interface{}) (bool, error) {
@@ -117,5 +129,5 @@ func gtrComparativeFunc(v1, v2 interface{}) (bool, error) {
 	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
 		return n1 > n2, nil
 	}
-	return false, fmt.Errorf("v1[%v] and v2[%v] can not `>` comparatable", v1, v2)
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `>` comparatable", v1, v1, v2, v2)
 }

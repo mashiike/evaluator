@@ -72,7 +72,7 @@ func parseBinaryExpr(str string, expr *ast.BinaryExpr) (Evaluator, error) {
 	op := strings.TrimSpace(extructStrPos(str, expr.OpPos, expr.Y.Pos()))
 	if cf, ok := getComparativeFunc(expr.Op); ok {
 		if xLogical, ok := xEvaluator.(*comparativeEvaluator); ok {
-			f, _ := getLogicalFunc(token.AND)
+			f, _ := getLogicalFunc(token.LAND)
 			return &logicalEvaluator{
 				x: xEvaluator,
 				y: &comparativeEvaluator{
@@ -98,6 +98,29 @@ func parseBinaryExpr(str string, expr *ast.BinaryExpr) (Evaluator, error) {
 			x:  xEvaluator,
 			y:  yEvaluator,
 			f:  lf,
+			op: op,
+		}, err
+	}
+
+	if f, ok := getComputableFunc(expr.Op); ok {
+		xLiteral, xok := xEvaluator.(*realNumericLiteralEvaluator)
+		yLiteral, yok := yEvaluator.(*realNumericLiteralEvaluator)
+		if xok && yok {
+			value, err := f(xLiteral.value, yLiteral.value)
+			if err == nil {
+				value, ok := isRealNumber(value)
+				if ok {
+					return &realNumericLiteralEvaluator{
+						value: value,
+						str:   fmt.Sprintf("%f", value),
+					}, nil
+				}
+			}
+		}
+		return &computableEvaluator{
+			x:  xEvaluator,
+			y:  yEvaluator,
+			f:  f,
 			op: op,
 		}, err
 	}
@@ -201,4 +224,31 @@ func (e *logicalEvaluator) Eval(vars Variables) (interface{}, error) {
 
 func (e *logicalEvaluator) String() string {
 	return fmt.Sprintf("(%s) %s (%s)", e.x, e.op, e.y)
+}
+
+type computableEvaluator struct {
+	x  Evaluator
+	y  Evaluator
+	f  computableFunc
+	op string
+}
+
+func (e *computableEvaluator) Eval(vars Variables) (interface{}, error) {
+	v1, err := e.x.Eval(vars)
+	if err != nil {
+		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+	}
+	v2, err := e.y.Eval(vars)
+	if err != nil {
+		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+	}
+	ret, err := e.f(v1, v2)
+	if err != nil {
+		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+	}
+	return ret, nil
+}
+
+func (e *computableEvaluator) String() string {
+	return fmt.Sprintf("%s %s %s", e.x, e.op, e.y)
 }

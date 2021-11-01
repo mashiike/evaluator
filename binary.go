@@ -1,6 +1,7 @@
 package evaluator
 
 import (
+	"errors"
 	"fmt"
 	"go/token"
 )
@@ -41,64 +42,6 @@ func getComparativeFunc(op token.Token) (comparativeFunc, bool) {
 	}
 }
 
-func isBothStrings(v1, v2 interface{}) (s1, s2 string, ok bool) {
-	s1, ok = v1.(string)
-	if !ok {
-		return
-	}
-	s2, ok = v2.(string)
-	return
-}
-
-func isBothRealNumbers(v1, v2 interface{}) (n1, n2 float64, ok bool) {
-	n1, ok = isRealNumber(v1)
-	if !ok {
-		return
-	}
-	n2, ok = isRealNumber(v2)
-	return
-}
-
-func isRealNumber(v interface{}) (float64, bool) {
-	switch v := v.(type) {
-	case float32:
-		return float64(v), true
-	case float64:
-		return v, true
-	case int:
-		return float64(v), true
-	case int8:
-		return float64(v), true
-	case int16:
-		return float64(v), true
-	case int32:
-		return float64(v), true
-	case int64:
-		return float64(v), true
-	case uint:
-		return float64(v), true
-	case uint8:
-		return float64(v), true
-	case uint16:
-		return float64(v), true
-	case uint32:
-		return float64(v), true
-	case uint64:
-		return float64(v), true
-	default:
-		return 0, false
-	}
-}
-
-func isBothBools(v1, v2 interface{}) (b1, b2, ok bool) {
-	b1, ok = v1.(bool)
-	if !ok {
-		return
-	}
-	b2, ok = v2.(bool)
-	return
-}
-
 func equalComparativeFunc(v1, v2 interface{}) (bool, error) {
 	if b1, b2, ok := isBothBools(v1, v2); ok {
 		return b1 == b2, nil
@@ -136,11 +79,59 @@ type logicalFunc func(bool, bool) bool
 
 func getLogicalFunc(op token.Token) (logicalFunc, bool) {
 	switch op {
-	case token.AND: // &&
+	case token.LAND: // &&
 		return func(b1, b2 bool) bool { return b1 && b2 }, true
-	case token.OR: // &&
+	case token.LOR: // &&
 		return func(b1, b2 bool) bool { return b1 || b2 }, true
 	default:
 		return nil, false
 	}
+}
+
+type computableFunc func(interface{}, interface{}) (interface{}, error)
+
+func getComputableFunc(op token.Token) (computableFunc, bool) {
+	switch op {
+	case token.ADD: // +
+		return addComputableFunc, true
+	case token.SUB: // -
+		return subComputableFunc, true
+	case token.MUL: // *
+		return mulComputableFunc, true
+	case token.QUO: // /
+		return quoComputableFunc, true
+	default:
+		return nil, false
+	}
+}
+
+func addComputableFunc(v1, v2 interface{}) (interface{}, error) {
+	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
+		return n1 + n2, nil
+	}
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `+` comparatable", v1, v1, v2, v2)
+}
+
+func subComputableFunc(v1, v2 interface{}) (interface{}, error) {
+	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
+		return n1 - n2, nil
+	}
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `-` comparatable", v1, v1, v2, v2)
+}
+
+func mulComputableFunc(v1, v2 interface{}) (interface{}, error) {
+	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
+		return n1 * n2, nil
+	}
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `*` comparatable", v1, v1, v2, v2)
+}
+
+func quoComputableFunc(v1, v2 interface{}) (interface{}, error) {
+	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
+		if n2 == 0 {
+			return nil, errors.New("divided by 0")
+		}
+		return n1 / n2, nil
+	}
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `*` comparatable", v1, v1, v2, v2)
 }

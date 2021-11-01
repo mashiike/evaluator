@@ -84,6 +84,18 @@ func TestEvaluatorSuccess(t *testing.T) {
 				false,
 			},
 		},
+		{
+			expr: "var1 / 2 <= 5.5 + 4.5",
+			variables: []evaluator.Variables{
+				{"var1": 2},
+				{"var1": 30.0},
+			},
+			expected: []interface {
+			}{
+				true,
+				false,
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {

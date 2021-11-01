@@ -160,6 +160,15 @@ func TestEvaluatorVariableInvid(t *testing.T) {
 				"Eval(`var1 == var2`) v1[1]::int and v2[def]::string can not `==` comparatable",
 			},
 		},
+		{
+			expr: "var1 / var2 ",
+			variables: []evaluator.Variables{
+				{"var1": 1, "var2": 0},
+			},
+			expected: []string{
+				"Eval(`var1 / var2`) divided by 0",
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {

@@ -207,3 +207,25 @@ func TestEvaluatorVariableInvid(t *testing.T) {
 		})
 	}
 }
+
+func TestEvaluatorAsComparator(t *testing.T) {
+
+	cases := map[string]bool{
+		"(var1 / 2)":           false,
+		"(var1 < 2)":           true,
+		"3 < var1 > 4":         true,
+		"(var1 < var2) < bar2": true,
+		"1 + 2 + 3":            false,
+	}
+	for expr, expected := range cases {
+		t.Run(expr, func(t *testing.T) {
+			e, err := evaluator.New(expr)
+			require.NoError(t, err, "must parse success")
+			c, ok := e.AsComparator()
+			require.EqualValues(t, expected, ok)
+			if expected {
+				require.NotNil(t, c)
+			}
+		})
+	}
+}

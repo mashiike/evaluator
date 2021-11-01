@@ -14,6 +14,15 @@ import (
 type Evaluator interface {
 	// Eval performs an evaluation by giving a set of variables.
 	Eval(Variables) (interface{}, error)
+
+	// AsComparator attempts to convert to Comparator
+	AsComparator() (Comparator, bool)
+}
+
+// Comparator is a special Evalutor whose evaluation expression is a comparison expression.
+type Comparator interface {
+	// Compare performs an comparison by giving a set of variables.
+	Compare(Variables) (bool, error)
 }
 
 // Variables are a group of variables given to the evaluator
@@ -56,6 +65,10 @@ func (e lockupVariableEvaluator) Eval(vars Variables) (interface{}, error) {
 		return v, nil
 	}
 	return nil, fmt.Errorf("variable %s is not givend", e)
+}
+
+func (e lockupVariableEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
 }
 
 func getSubExpr(str string, expr ast.Expr) string {
@@ -144,19 +157,31 @@ type comparativeEvaluator struct {
 }
 
 func (e *comparativeEvaluator) Eval(vars Variables) (interface{}, error) {
+	ret, err := e.Compare(vars)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (e *comparativeEvaluator) Compare(vars Variables) (bool, error) {
 	v1, err := e.x.Eval(vars)
 	if err != nil {
-		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
 	}
 	v2, err := e.y.Eval(vars)
 	if err != nil {
-		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
 	}
 	ret, err := e.f(v1, v2)
 	if err != nil {
-		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
 	}
 	return ret, nil
+}
+
+func (e *comparativeEvaluator) AsComparator() (Comparator, bool) {
+	return e, true
 }
 
 func (e *comparativeEvaluator) String() string {
@@ -192,6 +217,11 @@ type realNumericLiteralEvaluator struct {
 func (e *realNumericLiteralEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.value, nil
 }
+
+func (e *realNumericLiteralEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
+}
+
 func (e *realNumericLiteralEvaluator) String() string {
 	return e.str
 }
@@ -203,6 +233,11 @@ type stringLiteralEvaluator struct {
 func (e *stringLiteralEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.str, nil
 }
+
+func (e *stringLiteralEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
+}
+
 func (e *stringLiteralEvaluator) String() string {
 	return e.str
 }
@@ -215,19 +250,31 @@ type logicalEvaluator struct {
 }
 
 func (e *logicalEvaluator) Eval(vars Variables) (interface{}, error) {
+	ret, err := e.Compare(vars)
+	if err != nil {
+		return nil, err
+	}
+	return ret, nil
+}
+
+func (e *logicalEvaluator) Compare(vars Variables) (bool, error) {
 	v1, err := e.x.Eval(vars)
 	if err != nil {
-		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
 	}
 	v2, err := e.y.Eval(vars)
 	if err != nil {
-		return nil, fmt.Errorf("Eval(`%s`) %w", e, err)
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
 	}
 	b1, b2, ok := isBothBools(v1, v2)
 	if !ok {
-		return nil, errors.New("is not both bool")
+		return false, errors.New("is not both bool")
 	}
 	return e.f(b1, b2), nil
+}
+
+func (e *logicalEvaluator) AsComparator() (Comparator, bool) {
+	return e, true
 }
 
 func (e *logicalEvaluator) String() string {
@@ -257,6 +304,10 @@ func (e *computableEvaluator) Eval(vars Variables) (interface{}, error) {
 	return ret, nil
 }
 
+func (e *computableEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
+}
+
 func (e *computableEvaluator) String() string {
 	return fmt.Sprintf("%s %s %s", e.x, e.op, e.y)
 }
@@ -267,6 +318,13 @@ type parenEvaluator struct {
 
 func (e *parenEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.x.Eval(vars)
+}
+
+func (e *parenEvaluator) AsComparator() (Comparator, bool) {
+	if x, ok := e.x.AsComparator(); ok {
+		return x, true
+	}
+	return nil, false
 }
 
 func (e *parenEvaluator) String() string {

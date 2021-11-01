@@ -70,6 +70,16 @@ func TestEvaluatorSuccess(t *testing.T) {
 				true,
 			},
 		},
+		{
+			expr: "1.0 <= var1 <= 5",
+			variables: []evaluator.Variables{
+				{"var1": 2},
+			},
+			expected: []interface {
+			}{
+				true,
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {
@@ -78,7 +88,7 @@ func TestEvaluatorSuccess(t *testing.T) {
 			t.Logf("%s", e)
 			for i, v := range c.variables {
 				actual, err := e.Eval(v)
-				require.NoErrorf(t, err, "must eval sucess, variables case %d", i)
+				require.NoErrorf(t, err, "must eval success, variables case %d", i)
 				require.EqualValuesf(t, c.expected[i], actual, "must eval result match, variables case %d", i)
 			}
 		})

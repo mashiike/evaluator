@@ -131,3 +131,16 @@ func gtrComparativeFunc(v1, v2 interface{}) (bool, error) {
 	}
 	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `>` comparatable", v1, v1, v2, v2)
 }
+
+type logicalFunc func(bool, bool) bool
+
+func getLogicalFunc(op token.Token) (logicalFunc, bool) {
+	switch op {
+	case token.AND: // &&
+		return func(b1, b2 bool) bool { return b1 && b2 }, true
+	case token.OR: // &&
+		return func(b1, b2 bool) bool { return b1 || b2 }, true
+	default:
+		return nil, false
+	}
+}

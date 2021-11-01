@@ -36,6 +36,14 @@ func parseExpr(str string, expr ast.Expr) (Evaluator, error) {
 		return parseBinaryExpr(str, expr)
 	case *ast.BasicLit:
 		return parseBasicLit(str, expr)
+	case *ast.ParenExpr:
+		x, err := parseExpr(str, expr.X)
+		if err != nil {
+			return nil, err
+		}
+		return &parenEvaluator{
+			x: x,
+		}, nil
 	default:
 		return nil, fmt.Errorf("can not parse `%s` ast type `%T` not implemented", str, expr)
 	}
@@ -251,4 +259,16 @@ func (e *computableEvaluator) Eval(vars Variables) (interface{}, error) {
 
 func (e *computableEvaluator) String() string {
 	return fmt.Sprintf("%s %s %s", e.x, e.op, e.y)
+}
+
+type parenEvaluator struct {
+	x Evaluator
+}
+
+func (e *parenEvaluator) Eval(vars Variables) (interface{}, error) {
+	return e.x.Eval(vars)
+}
+
+func (e *parenEvaluator) String() string {
+	return fmt.Sprintf("(%s)", e.x)
 }

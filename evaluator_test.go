@@ -120,6 +120,31 @@ func TestEvaluatorSuccess(t *testing.T) {
 				20,
 			},
 		},
+		{
+			expr: "as_string(coalesce(rate(var1, var2),nil,``,' '))",
+			variables: []evaluator.Variables{
+				{"var1": 3, "var2": 0},
+				{"var1": 2, "var2": 1},
+			},
+			expected: []interface {
+			}{
+				"",
+				"2",
+			},
+		},
+		{
+			expr: "coalesce(as_numeric(var1),10.0)",
+			variables: []evaluator.Variables{
+				{"var1": "hoge"},
+				{"var1": 2.0},
+				{"var1": "5.0"},
+			},
+			expected: []interface{}{
+				10.0,
+				2.0,
+				5.0,
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {
@@ -211,11 +236,13 @@ func TestEvaluatorVariableInvid(t *testing.T) {
 func TestEvaluatorAsComparator(t *testing.T) {
 
 	cases := map[string]bool{
-		"(var1 / 2)":           false,
-		"(var1 < 2)":           true,
-		"3 < var1 > 4":         true,
-		"(var1 < var2) < bar2": true,
-		"1 + 2 + 3":            false,
+		"(var1 / 2)":                            false,
+		"(var1 < 2)":                            true,
+		"3 < var1 > 4":                          true,
+		"(var1 < var2) < bar2":                  true,
+		"1 + 2 + 3":                             false,
+		"coalesce(as_numeric(var1),10.0)":       false,
+		"coalesce(as_numeric(var1),10.0) >= 10": true,
 	}
 	for expr, expected := range cases {
 		t.Run(expr, func(t *testing.T) {

@@ -17,12 +17,16 @@ type Evaluator interface {
 
 	// AsComparator attempts to convert to Comparator
 	AsComparator() (Comparator, bool)
+
+	fmt.Stringer
 }
 
 // Comparator is a special Evalutor whose evaluation expression is a comparison expression.
 type Comparator interface {
 	// Compare performs an comparison by giving a set of variables.
 	Compare(Variables) (bool, error)
+
+	fmt.Stringer
 }
 
 // Variables are a group of variables given to the evaluator
@@ -40,7 +44,7 @@ func New(expr string) (Evaluator, error) {
 func parseExpr(str string, expr ast.Expr) (Evaluator, error) {
 	switch expr := expr.(type) {
 	case *ast.Ident:
-		return lockupVariableEvaluator(expr.Name), nil
+		return parseIdent(str, expr)
 	case *ast.BinaryExpr:
 		return parseBinaryExpr(str, expr)
 	case *ast.BasicLit:
@@ -53,9 +57,32 @@ func parseExpr(str string, expr ast.Expr) (Evaluator, error) {
 		return &parenEvaluator{
 			x: x,
 		}, nil
+	case *ast.CallExpr:
+		return parseCallExpr(str, expr)
 	default:
 		return nil, fmt.Errorf("can not parse `%s` ast type `%T` not implemented", str, expr)
 	}
+}
+
+func parseIdent(str string, expr *ast.Ident) (Evaluator, error) {
+	if expr.Name == "nil" {
+		return nilEvaluator{}, nil
+	}
+	return lockupVariableEvaluator(expr.Name), nil
+}
+
+type nilEvaluator struct{}
+
+func (e nilEvaluator) Eval(vars Variables) (interface{}, error) {
+	return nil, nil
+}
+
+func (e nilEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
+}
+
+func (e nilEvaluator) String() string {
+	return "nil"
 }
 
 type lockupVariableEvaluator string
@@ -69,6 +96,10 @@ func (e lockupVariableEvaluator) Eval(vars Variables) (interface{}, error) {
 
 func (e lockupVariableEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
+}
+
+func (e lockupVariableEvaluator) String() string {
+	return string(e)
 }
 
 func getSubExpr(str string, expr ast.Expr) string {
@@ -202,7 +233,11 @@ func parseBasicLit(str string, expr *ast.BasicLit) (Evaluator, error) {
 		}, nil
 	case token.STRING:
 		return &stringLiteralEvaluator{
-			str: expr.Value,
+			str: strings.Trim(expr.Value, "`\""),
+		}, nil
+	case token.CHAR:
+		return &stringLiteralEvaluator{
+			str: strings.Trim(expr.Value, "'"),
 		}, nil
 	default:
 		return nil, fmt.Errorf("unknown literal `%s`", expr.Kind)
@@ -329,4 +364,69 @@ func (e *parenEvaluator) AsComparator() (Comparator, bool) {
 
 func (e *parenEvaluator) String() string {
 	return fmt.Sprintf("(%s)", e.x)
+}
+
+func parseCallExpr(str string, expr *ast.CallExpr) (Evaluator, error) {
+	argEvalutors := make([]Evaluator, 0, len(expr.Args))
+	for i, arg := range expr.Args {
+		argStr := getSubExpr(str, arg)
+		argEvalutor, err := parseExpr(str, arg)
+		if err != nil {
+			return nil, fmt.Errorf("parse CallExpr.Args[%d] `%s` %w", i, argStr, err)
+		}
+		argEvalutors = append(argEvalutors, argEvalutor)
+	}
+	var funcName string
+	funStr := getSubExpr(str, expr.Fun)
+	switch fun := expr.Fun.(type) {
+	case *ast.Ident:
+		funcName = fun.Name
+	default:
+		return nil, fmt.Errorf("parse CallExpr.Fun `%s` unexpected type %T", funStr, fun)
+	}
+	f, err := getCallFunc(funcName, argEvalutors)
+	if err != nil {
+		return nil, err
+	}
+	return &callEvaluator{
+		args:     argEvalutors,
+		f:        f,
+		funcName: funcName,
+	}, nil
+}
+
+type callEvaluator struct {
+	args     []Evaluator
+	f        callFunc
+	funcName string
+}
+
+func (e *callEvaluator) Eval(vars Variables) (interface{}, error) {
+	args := make([]interface{}, 0, len(e.args))
+	for i, a := range e.args {
+		arg, err := a.Eval(vars)
+		if err != nil {
+			return nil, fmt.Errorf("Eval(`%s`) Args[%d] %w", e, i, err)
+		}
+		args = append(args, arg)
+	}
+	return e.f(args...)
+}
+
+func (e *callEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
+}
+
+func (e *callEvaluator) String() string {
+	var builder strings.Builder
+	builder.WriteString(e.funcName)
+	builder.WriteRune('(')
+	for i, arg := range e.args {
+		builder.WriteString(arg.String())
+		if i+1 < len(e.args) {
+			builder.WriteString(", ")
+		}
+	}
+	builder.WriteRune(')')
+	return builder.String()
 }

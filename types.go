@@ -1,12 +1,25 @@
 package evaluator
 
+import "strconv"
+
 func isBothStrings(v1, v2 interface{}) (s1, s2 string, ok bool) {
-	s1, ok = v1.(string)
+	s1, ok = isString(v1)
 	if !ok {
 		return
 	}
-	s2, ok = v2.(string)
+	s2, ok = isString(v2)
 	return
+}
+
+func isString(v interface{}) (string, bool) {
+	switch v := v.(type) {
+	case string:
+		return v, true
+	case rune:
+		return string(v), true
+	default:
+		return "", false
+	}
 }
 
 func isBothBools(v1, v2 interface{}) (b1, b2, ok bool) {
@@ -56,4 +69,26 @@ func isRealNumber(v interface{}) (float64, bool) {
 	default:
 		return 0, false
 	}
+}
+
+func asNumber(v interface{}) (float64, bool) {
+	if n, ok := isRealNumber(v); ok {
+		return n, true
+	}
+	if s, ok := isString(v); ok {
+		f, err := strconv.ParseFloat(s, 64)
+		return f, err == nil
+	}
+	return 0.0, false
+}
+
+func asString(v interface{}) (string, bool) {
+	if s, ok := isString(v); ok {
+		return s, true
+	}
+	if n, ok := isRealNumber(v); ok {
+		return strconv.FormatFloat(n, 'f', -1, 64), true
+	}
+
+	return "", false
 }

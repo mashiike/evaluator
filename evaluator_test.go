@@ -74,10 +74,14 @@ func TestEvaluatorSuccess(t *testing.T) {
 			expr: "1.0 <= var1 <= 5",
 			variables: []evaluator.Variables{
 				{"var1": 2},
+				{"var1": -2.0},
+				{"var1": 10.0},
 			},
 			expected: []interface {
 			}{
 				true,
+				false,
+				false,
 			},
 		},
 	}

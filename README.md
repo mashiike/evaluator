@@ -11,7 +11,7 @@ A simple library for expression evaluation.
 ### SYNOPSIS
 
 ```golang
-	e, err := evaluator.New("(var1 + 0.5) * var2")
+    e, err := evaluator.New("(var1 + 0.5) * var2")
     if err != nil {
         log.Fatal(err)
     }

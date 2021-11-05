@@ -28,7 +28,7 @@ see [godoc.org/github.com/mashiike/evaluator](https://godoc.org/github.com/mashi
 
 ## Author
 
-Copyright (c) 2017 KAYAC Inc.
+Copyright (c) 2021 Mashiike.
 
 ## LICENSE
 

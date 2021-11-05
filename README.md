@@ -1,7 +1,5 @@
 # evaluator
 
-# retry
-
 [![Release](https://img.shields.io/github/release/mashiike/evaluator.svg?style=flat-square)](https://github.com/mashiike/evaluator/releases/latest)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 ![test workflow](https://github.com/mashiike/evaluator/actions/workflows/test.yaml/badge.svg)

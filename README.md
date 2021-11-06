@@ -1,6 +1,6 @@
 # evaluator
 
-[![Release](https://img.shields.io/github/release/mashiike/evaluator.svg?style=flat-square)](https://github.com/mashiike/evaluator/releases/latest)
+[![Tag](https://img.shields.io/github/v/tag/mashiike/evaluator)](https://github.com/mashiike/evaluator/tags)
 [![Software License](https://img.shields.io/badge/license-MIT-brightgreen.svg?style=flat-square)](LICENSE.md)
 ![test workflow](https://github.com/mashiike/evaluator/actions/workflows/test.yaml/badge.svg)
 [![Go Report Card](https://goreportcard.com/badge/github.com/mashiike/evaluator?style=flat-square)](https://goreportcard.com/report/github.com/mashiike/evaluator)

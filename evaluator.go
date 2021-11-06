@@ -91,7 +91,7 @@ func (e lockupVariableEvaluator) Eval(vars Variables) (interface{}, error) {
 	if v, ok := vars[string(e)]; ok {
 		return v, nil
 	}
-	return nil, fmt.Errorf("variable %s is not givend", e)
+	return nil, fmt.Errorf("%s %w", e, ErrVariableNotFound)
 }
 
 func (e lockupVariableEvaluator) AsComparator() (Comparator, bool) {

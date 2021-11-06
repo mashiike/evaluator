@@ -1,7 +1,6 @@
 package evaluator
 
 import (
-	"errors"
 	"fmt"
 	"go/token"
 )
@@ -129,9 +128,9 @@ func mulComputableFunc(v1, v2 interface{}) (interface{}, error) {
 func quoComputableFunc(v1, v2 interface{}) (interface{}, error) {
 	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
 		if n2 == 0 {
-			return nil, errors.New("divided by 0")
+			return nil, ErrDivideByZero
 		}
 		return n1 / n2, nil
 	}
-	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `*` comparatable", v1, v1, v2, v2)
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `/` comparatable", v1, v1, v2, v2)
 }

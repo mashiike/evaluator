@@ -173,7 +173,7 @@ func TestEvaluatorVariableInvid(t *testing.T) {
 				{"var2": 1},
 			},
 			expected: []string{
-				"variable var1 is not givend",
+				"var1 variable not found",
 			},
 		},
 		{
@@ -215,7 +215,7 @@ func TestEvaluatorVariableInvid(t *testing.T) {
 				{"var1": 1, "var2": 0},
 			},
 			expected: []string{
-				"Eval(`var1 / var2`) divided by 0",
+				"Eval(`var1 / var2`) divide by 0",
 			},
 		},
 	}
@@ -228,6 +228,38 @@ func TestEvaluatorVariableInvid(t *testing.T) {
 				_, err := e.Eval(v)
 				require.Error(t, err, "must eval err, variables case %d", i)
 				require.EqualError(t, err, c.expected[i], "must eval err msg match, variables case %d", i)
+			}
+		})
+	}
+}
+
+func TestEvaluatorReservedError(t *testing.T) {
+	cases := []struct {
+		expr      string
+		variables []evaluator.Variables
+		expected  []func(error) bool
+	}{
+		{
+			expr: "var1 / 0",
+			variables: []evaluator.Variables{
+				{"var1": 1},
+				{"var2": 1},
+			},
+			expected: []func(error) bool{
+				evaluator.IsDivideByZero,
+				evaluator.IsVariableNotFound,
+			},
+		},
+	}
+	for _, c := range cases {
+		t.Run(c.expr, func(t *testing.T) {
+			e, err := evaluator.New(c.expr)
+			require.NoError(t, err, "must parse success")
+			t.Logf("%s", e)
+			for i, v := range c.variables {
+				_, err := e.Eval(v)
+				require.Error(t, err, "must eval err, variables case %d", i)
+				require.True(t, c.expected[i](err))
 			}
 		})
 	}

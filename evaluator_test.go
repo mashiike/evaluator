@@ -246,7 +246,7 @@ func TestEvaluatorReservedError(t *testing.T) {
 				{"var2": 1},
 			},
 			expected: []func(error) bool{
-				evaluator.IsDevideByZero,
+				evaluator.IsDivideByZero,
 				evaluator.IsVariableNotFound,
 			},
 		},

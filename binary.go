@@ -128,7 +128,7 @@ func mulComputableFunc(v1, v2 interface{}) (interface{}, error) {
 func quoComputableFunc(v1, v2 interface{}) (interface{}, error) {
 	if n1, n2, ok := isBothRealNumbers(v1, v2); ok {
 		if n2 == 0 {
-			return nil, ErrDevideByZero
+			return nil, ErrDivideByZero
 		}
 		return n1 / n2, nil
 	}

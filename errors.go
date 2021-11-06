@@ -4,13 +4,13 @@ import "errors"
 
 //resuered error
 var (
-	ErrDevideByZero     = errors.New("devide by 0")
+	ErrDivideByZero     = errors.New("divide by 0")
 	ErrVariableNotFound = errors.New("variable not found")
 )
 
-//IsDevideByZero check error DevideByZero
-func IsDevideByZero(err error) bool {
-	return equalErorr(err, ErrDevideByZero)
+//IsDivideByZero check error DivideByZero
+func IsDivideByZero(err error) bool {
+	return equalErorr(err, ErrDivideByZero)
 }
 
 //IsVariableNotFound check error VariableNotFound

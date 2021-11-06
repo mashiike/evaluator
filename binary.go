@@ -133,5 +133,5 @@ func quoComputableFunc(v1, v2 interface{}) (interface{}, error) {
 		}
 		return n1 / n2, nil
 	}
-	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `*` comparatable", v1, v1, v2, v2)
+	return false, fmt.Errorf("v1[%v]::%T and v2[%v]::%T can not `/` comparatable", v1, v1, v2, v2)
 }

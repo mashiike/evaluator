@@ -223,6 +223,7 @@ func TestEvaluatorVariableInvalid(t *testing.T) {
 		t.Run(c.expr, func(t *testing.T) {
 			e, err := evaluator.New(c.expr)
 			require.NoError(t, err, "must parse success")
+			e.Strict(true)
 			t.Logf("%s", e)
 			for i, v := range c.variables {
 				_, err := e.Eval(v)

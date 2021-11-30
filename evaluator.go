@@ -236,7 +236,10 @@ func (e *comparativeEvaluator) Compare(vars Variables) (bool, error) {
 	return ret, nil
 }
 
-func (e *comparativeEvaluator) Strict(bool) {}
+func (e *comparativeEvaluator) Strict(v bool) {
+	e.x.Strict(v)
+	e.y.Strict(v)
+}
 
 func (e *comparativeEvaluator) AsComparator() (Comparator, bool) {
 	return e, true
@@ -329,7 +332,10 @@ func (e *logicalEvaluator) Eval(vars Variables) (interface{}, error) {
 	return ret, nil
 }
 
-func (e *logicalEvaluator) Strict(bool) {}
+func (e *logicalEvaluator) Strict(v bool) {
+	e.x.Strict(v)
+	e.y.Strict(v)
+}
 
 func (e *logicalEvaluator) Compare(vars Variables) (bool, error) {
 	v1, err := e.x.Eval(vars)
@@ -378,7 +384,10 @@ func (e *computableEvaluator) Eval(vars Variables) (interface{}, error) {
 	return ret, nil
 }
 
-func (e *computableEvaluator) Strict(bool) {}
+func (e *computableEvaluator) Strict(v bool) {
+	e.x.Strict(v)
+	e.y.Strict(v)
+}
 
 func (e *computableEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
@@ -396,7 +405,9 @@ func (e *parenEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.x.Eval(vars)
 }
 
-func (e *parenEvaluator) Strict(bool) {}
+func (e *parenEvaluator) Strict(v bool) {
+	e.x.Strict(v)
+}
 
 func (e *parenEvaluator) AsComparator() (Comparator, bool) {
 	if x, ok := e.x.AsComparator(); ok {
@@ -456,7 +467,11 @@ func (e *callEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.f(args...)
 }
 
-func (e *callEvaluator) Strict(bool) {}
+func (e *callEvaluator) Strict(v bool) {
+	for _, arg := range e.args {
+		arg.Strict(v)
+	}
+}
 
 func (e *callEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false

@@ -15,13 +15,19 @@ type Evaluator interface {
 	// Eval performs an evaluation by giving a set of variables.
 	Eval(Variables) (interface{}, error)
 
+	//Strict sets the expression evaluation to run in strict mode. The default is true.
+	//For example, the behavior changes when the variable is not set.
+	//  Referenced as nil if Strict is set to false.
+	//  If set to true, the expression evaluation will be Error.
+	Strict(bool)
+
 	// AsComparator attempts to convert to Comparator
 	AsComparator() (Comparator, bool)
 
 	fmt.Stringer
 }
 
-// Comparator is a special Evalutor whose evaluation expression is a comparison expression.
+// Comparator is a special Evaluator whose evaluation expression is a comparison expression.
 type Comparator interface {
 	// Compare performs an comparison by giving a set of variables.
 	Compare(Variables) (bool, error)
@@ -68,7 +74,7 @@ func parseIdent(str string, expr *ast.Ident) (Evaluator, error) {
 	if expr.Name == "nil" {
 		return nilEvaluator{}, nil
 	}
-	return lockupVariableEvaluator(expr.Name), nil
+	return newLockupVariableEvaluator(expr.Name), nil
 }
 
 type nilEvaluator struct{}
@@ -76,6 +82,8 @@ type nilEvaluator struct{}
 func (e nilEvaluator) Eval(vars Variables) (interface{}, error) {
 	return nil, nil
 }
+
+func (e nilEvaluator) Strict(bool) {}
 
 func (e nilEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
@@ -85,28 +93,45 @@ func (e nilEvaluator) String() string {
 	return "nil"
 }
 
-type lockupVariableEvaluator string
-
-func (e lockupVariableEvaluator) Eval(vars Variables) (interface{}, error) {
-	if v, ok := vars[string(e)]; ok {
-		return v, nil
-	}
-	return nil, fmt.Errorf("%s %w", e, ErrVariableNotFound)
+type lockupVariableEvaluator struct {
+	strict bool
+	name   string
 }
 
-func (e lockupVariableEvaluator) AsComparator() (Comparator, bool) {
+func newLockupVariableEvaluator(name string) *lockupVariableEvaluator {
+	return &lockupVariableEvaluator{
+		name:   name,
+		strict: true,
+	}
+}
+
+func (e *lockupVariableEvaluator) Eval(vars Variables) (interface{}, error) {
+	if v, ok := vars[string(e.name)]; ok {
+		return v, nil
+	}
+	if e.strict {
+		return nil, fmt.Errorf("%s %w", e, ErrVariableNotFound)
+	}
+	return nil, nil
+}
+
+func (e *lockupVariableEvaluator) Strict(v bool) {
+	e.strict = v
+}
+
+func (e *lockupVariableEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
 }
 
-func (e lockupVariableEvaluator) String() string {
-	return string(e)
+func (e *lockupVariableEvaluator) String() string {
+	return e.name
 }
 
 func getSubExpr(str string, expr ast.Expr) string {
-	return extructStrPos(str, expr.Pos(), expr.End())
+	return extractStrPos(str, expr.Pos(), expr.End())
 }
 
-func extructStrPos(str string, pos, end token.Pos) string {
+func extractStrPos(str string, pos, end token.Pos) string {
 	return str[pos-1 : end-1]
 }
 
@@ -121,7 +146,7 @@ func parseBinaryExpr(str string, expr *ast.BinaryExpr) (Evaluator, error) {
 	if err != nil {
 		return nil, fmt.Errorf("parse BinaryExpr.Y `%s` %w", yStr, err)
 	}
-	op := strings.TrimSpace(extructStrPos(str, expr.OpPos, expr.Y.Pos()))
+	op := strings.TrimSpace(extractStrPos(str, expr.OpPos, expr.Y.Pos()))
 	if cf, ok := getComparativeFunc(expr.Op); ok {
 		if xLogical, ok := xEvaluator.(*comparativeEvaluator); ok {
 			f, _ := getLogicalFunc(token.LAND)
@@ -211,6 +236,8 @@ func (e *comparativeEvaluator) Compare(vars Variables) (bool, error) {
 	return ret, nil
 }
 
+func (e *comparativeEvaluator) Strict(bool) {}
+
 func (e *comparativeEvaluator) AsComparator() (Comparator, bool) {
 	return e, true
 }
@@ -227,18 +254,11 @@ func parseBasicLit(str string, expr *ast.BasicLit) (Evaluator, error) {
 		if err != nil {
 			return nil, err
 		}
-		return &realNumericLiteralEvaluator{
-			str:   strings.TrimSpace(getSubExpr(str, expr)),
-			value: v,
-		}, nil
+		return newRealNumericLiteralEvaluator(v, strings.TrimSpace(getSubExpr(str, expr))), nil
 	case token.STRING:
-		return &stringLiteralEvaluator{
-			str: strings.Trim(expr.Value, "`\""),
-		}, nil
+		return newStringLiteralEvaluator(strings.Trim(expr.Value, "`\"")), nil
 	case token.CHAR:
-		return &stringLiteralEvaluator{
-			str: strings.Trim(expr.Value, "'"),
-		}, nil
+		return newStringLiteralEvaluator(strings.Trim(expr.Value, "'")), nil
 	default:
 		return nil, fmt.Errorf("unknown literal `%s`", expr.Kind)
 	}
@@ -249,9 +269,18 @@ type realNumericLiteralEvaluator struct {
 	str   string
 }
 
+func newRealNumericLiteralEvaluator(value float64, str string) *realNumericLiteralEvaluator {
+	return &realNumericLiteralEvaluator{
+		str:   str,
+		value: value,
+	}
+}
+
 func (e *realNumericLiteralEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.value, nil
 }
+
+func (e *realNumericLiteralEvaluator) Strict(bool) {}
 
 func (e *realNumericLiteralEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
@@ -265,9 +294,17 @@ type stringLiteralEvaluator struct {
 	str string
 }
 
+func newStringLiteralEvaluator(str string) *stringLiteralEvaluator {
+	return &stringLiteralEvaluator{
+		str: str,
+	}
+}
+
 func (e *stringLiteralEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.str, nil
 }
+
+func (e *stringLiteralEvaluator) Strict(bool) {}
 
 func (e *stringLiteralEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
@@ -291,6 +328,8 @@ func (e *logicalEvaluator) Eval(vars Variables) (interface{}, error) {
 	}
 	return ret, nil
 }
+
+func (e *logicalEvaluator) Strict(bool) {}
 
 func (e *logicalEvaluator) Compare(vars Variables) (bool, error) {
 	v1, err := e.x.Eval(vars)
@@ -339,6 +378,8 @@ func (e *computableEvaluator) Eval(vars Variables) (interface{}, error) {
 	return ret, nil
 }
 
+func (e *computableEvaluator) Strict(bool) {}
+
 func (e *computableEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false
 }
@@ -355,6 +396,8 @@ func (e *parenEvaluator) Eval(vars Variables) (interface{}, error) {
 	return e.x.Eval(vars)
 }
 
+func (e *parenEvaluator) Strict(bool) {}
+
 func (e *parenEvaluator) AsComparator() (Comparator, bool) {
 	if x, ok := e.x.AsComparator(); ok {
 		return x, true
@@ -367,14 +410,14 @@ func (e *parenEvaluator) String() string {
 }
 
 func parseCallExpr(str string, expr *ast.CallExpr) (Evaluator, error) {
-	argEvalutors := make([]Evaluator, 0, len(expr.Args))
+	argEvaluators := make([]Evaluator, 0, len(expr.Args))
 	for i, arg := range expr.Args {
 		argStr := getSubExpr(str, arg)
-		argEvalutor, err := parseExpr(str, arg)
+		argEvaluator, err := parseExpr(str, arg)
 		if err != nil {
 			return nil, fmt.Errorf("parse CallExpr.Args[%d] `%s` %w", i, argStr, err)
 		}
-		argEvalutors = append(argEvalutors, argEvalutor)
+		argEvaluators = append(argEvaluators, argEvaluator)
 	}
 	var funcName string
 	funStr := getSubExpr(str, expr.Fun)
@@ -384,12 +427,12 @@ func parseCallExpr(str string, expr *ast.CallExpr) (Evaluator, error) {
 	default:
 		return nil, fmt.Errorf("parse CallExpr.Fun `%s` unexpected type %T", funStr, fun)
 	}
-	f, err := getCallFunc(funcName, argEvalutors)
+	f, err := getCallFunc(funcName, argEvaluators)
 	if err != nil {
 		return nil, err
 	}
 	return &callEvaluator{
-		args:     argEvalutors,
+		args:     argEvaluators,
 		f:        f,
 		funcName: funcName,
 	}, nil
@@ -412,6 +455,8 @@ func (e *callEvaluator) Eval(vars Variables) (interface{}, error) {
 	}
 	return e.f(args...)
 }
+
+func (e *callEvaluator) Strict(bool) {}
 
 func (e *callEvaluator) AsComparator() (Comparator, bool) {
 	return nil, false

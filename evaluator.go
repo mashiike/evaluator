@@ -15,7 +15,7 @@ type Evaluator interface {
 	// Eval performs an evaluation by giving a set of variables.
 	Eval(Variables) (interface{}, error)
 
-	//Strict sets the expression evaluation to run in strict mode. The default is true.
+	//Strict sets the expression evaluation to run in strict mode. The default is false.
 	//For example, the behavior changes when the variable is not set.
 	//  Referenced as nil if Strict is set to false.
 	//  If set to true, the expression evaluation will be Error.
@@ -101,7 +101,7 @@ type lockupVariableEvaluator struct {
 func newLockupVariableEvaluator(name string) *lockupVariableEvaluator {
 	return &lockupVariableEvaluator{
 		name:   name,
-		strict: true,
+		strict: false,
 	}
 }
 

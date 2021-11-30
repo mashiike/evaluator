@@ -2,7 +2,7 @@ package evaluator
 
 import "errors"
 
-//resuered error
+//reserved error
 var (
 	ErrDivideByZero     = errors.New("divide by 0")
 	ErrVariableNotFound = errors.New("variable not found")
@@ -10,20 +10,20 @@ var (
 
 //IsDivideByZero check error DivideByZero
 func IsDivideByZero(err error) bool {
-	return equalErorr(err, ErrDivideByZero)
+	return equalError(err, ErrDivideByZero)
 }
 
 //IsVariableNotFound check error VariableNotFound
 func IsVariableNotFound(err error) bool {
-	return equalErorr(err, ErrVariableNotFound)
+	return equalError(err, ErrVariableNotFound)
 }
 
-func equalErorr(err, other error) bool {
+func equalError(err, other error) bool {
 	if err == other {
 		return true
 	}
 	if err := errors.Unwrap(err); err != nil {
-		return equalErorr(err, other)
+		return equalError(err, other)
 	}
 	return false
 }

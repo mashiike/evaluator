@@ -22,12 +22,17 @@ func isString(v interface{}) (string, bool) {
 	}
 }
 
+func isBool(v interface{}) (b, ok bool) {
+	b, ok = v.(bool)
+	return
+}
+
 func isBothBools(v1, v2 interface{}) (b1, b2, ok bool) {
-	b1, ok = v1.(bool)
+	b1, ok = isBool(v1)
 	if !ok {
 		return
 	}
-	b2, ok = v2.(bool)
+	b2, ok = isBool(v2)
 	return
 }
 
@@ -91,4 +96,18 @@ func asString(v interface{}) (string, bool) {
 	}
 
 	return "", false
+}
+
+func asBool(v interface{}) (bool, bool) {
+	if b, ok := isBool(v); ok {
+		return b, ok
+	}
+	if n, ok := isRealNumber(v); ok {
+		return n == 0, true
+	}
+	if s, ok := isString(v); ok {
+		b, err := strconv.ParseBool(s)
+		return b, err == nil
+	}
+	return false, false
 }

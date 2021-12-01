@@ -40,11 +40,17 @@ type Variables map[string]interface{}
 
 // New parses the expression to create an evaluator
 func New(expr string) (Evaluator, error) {
+	expr = prepare(expr)
 	astExpr, err := parser.ParseExpr(expr)
 	if err != nil {
 		return nil, err
 	}
 	return parseExpr(expr, astExpr)
+}
+
+func prepare(expr string) string {
+	//replace if( => __if(
+	return strings.ReplaceAll(expr, "if(", "__if(")
 }
 
 func parseExpr(str string, expr ast.Expr) (Evaluator, error) {
@@ -65,6 +71,8 @@ func parseExpr(str string, expr ast.Expr) (Evaluator, error) {
 		}, nil
 	case *ast.CallExpr:
 		return parseCallExpr(str, expr)
+	case *ast.UnaryExpr:
+		return parseUnaryExpr(str, expr)
 	default:
 		return nil, fmt.Errorf("can not parse `%s` ast type `%T` not implemented", str, expr)
 	}
@@ -489,4 +497,51 @@ func (e *callEvaluator) String() string {
 	}
 	builder.WriteRune(')')
 	return builder.String()
+}
+
+func parseUnaryExpr(str string, expr *ast.UnaryExpr) (Evaluator, error) {
+	xStr := getSubExpr(str, expr.X)
+	xEvaluator, err := parseExpr(str, expr.X)
+	if err != nil {
+		return nil, fmt.Errorf("parse BinaryExpr.X `%s` %w", xStr, err)
+	}
+	op := strings.TrimSpace(extractStrPos(str, expr.OpPos, expr.End()))
+	if f, ok := getUnaryFunc(expr.Op); ok {
+		return &unaryEvaluator{
+			x:  xEvaluator,
+			f:  f,
+			op: op,
+		}, nil
+	}
+	return nil, fmt.Errorf("parse `%s` invalid operator", op)
+}
+
+type unaryEvaluator struct {
+	x  Evaluator
+	f  unaryFunc
+	op string
+}
+
+func (e *unaryEvaluator) Eval(vars Variables) (interface{}, error) {
+	v, err := e.x.Eval(vars)
+	if err != nil {
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
+	}
+	ret, err := e.f(v)
+	if err != nil {
+		return false, fmt.Errorf("Eval(`%s`) %w", e, err)
+	}
+	return ret, nil
+}
+
+func (e *unaryEvaluator) Strict(v bool) {
+	e.x.Strict(true)
+}
+
+func (e *unaryEvaluator) AsComparator() (Comparator, bool) {
+	return nil, false
+}
+
+func (e *unaryEvaluator) String() string {
+	return fmt.Sprintf("%s(%s)", e.op, e.x)
 }

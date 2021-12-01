@@ -80,7 +80,7 @@ func getLogicalFunc(op token.Token) (logicalFunc, bool) {
 	switch op {
 	case token.LAND: // &&
 		return func(b1, b2 bool) bool { return b1 && b2 }, true
-	case token.LOR: // &&
+	case token.LOR: // ||
 		return func(b1, b2 bool) bool { return b1 || b2 }, true
 	default:
 		return nil, false

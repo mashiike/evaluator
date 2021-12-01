@@ -6,23 +6,28 @@ type callFunc func(...interface{}) (interface{}, error)
 
 func getCallFunc(funcName string, argEvaluators []Evaluator) (callFunc, error) {
 	switch funcName {
-	case "rate":
+	case "rate": //rate(number, number)
 		if len(argEvaluators) != 2 {
 			return nil, newNumOfArgumentsMismatchError(funcName, 2, len(argEvaluators))
 		}
 		return rateCallFunc, nil
-	case "coalesce":
+	case "coalesce": //coalesce(any, any, ...)
 		return coalesceCallFunc, nil
-	case "as_numeric":
+	case "as_numeric": // as_numeric(any)
 		if len(argEvaluators) != 1 {
 			return nil, newNumOfArgumentsMismatchError(funcName, 1, len(argEvaluators))
 		}
 		return asNumericCallFunc, nil
-	case "as_string":
+	case "as_string": // as_string(any)
 		if len(argEvaluators) != 1 {
 			return nil, newNumOfArgumentsMismatchError(funcName, 1, len(argEvaluators))
 		}
 		return asStringCallFunc, nil
+	case "if": // if(bool, any, any)
+		if len(argEvaluators) != 3 {
+			return nil, newNumOfArgumentsMismatchError(funcName, 3, len(argEvaluators))
+		}
+		return ifCallFunc, nil
 	default:
 		return nil, fmt.Errorf("%s() func is not found", funcName)
 	}
@@ -60,4 +65,15 @@ func asNumericCallFunc(args ...interface{}) (interface{}, error) {
 		return v, nil
 	}
 	return nil, nil
+}
+
+func ifCallFunc(args ...interface{}) (interface{}, error) {
+	cond, ok := asBool(args[0])
+	if !ok {
+		return nil, fmt.Errorf("if(v1[%v]::%T,v2[%v]::%T,v3[%v]::%T) can not eval", args[0], args[0], args[1], args[1], args[2], args[2])
+	}
+	if cond {
+		return args[1], nil
+	}
+	return args[2], nil
 }

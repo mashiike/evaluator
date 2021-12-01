@@ -27,7 +27,7 @@ func getCallFunc(funcName string, argEvaluators []Evaluator) (callFunc, error) {
 			return nil, newNumOfArgumentsMismatchError(funcName, 1, len(argEvaluators))
 		}
 		return asStringCallFunc, nil
-	case "if": // if(bool, any, any)
+	case "__if": // if(bool, any, any)
 		if len(argEvaluators) != 3 {
 			return nil, newNumOfArgumentsMismatchError(funcName, 3, len(argEvaluators))
 		}

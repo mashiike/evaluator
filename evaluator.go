@@ -40,11 +40,17 @@ type Variables map[string]interface{}
 
 // New parses the expression to create an evaluator
 func New(expr string) (Evaluator, error) {
+	expr = prepare(expr)
 	astExpr, err := parser.ParseExpr(expr)
 	if err != nil {
 		return nil, err
 	}
 	return parseExpr(expr, astExpr)
+}
+
+func prepare(expr string) string {
+	//replace if( => __if(
+	return strings.ReplaceAll(expr, "if(", "__if(")
 }
 
 func parseExpr(str string, expr ast.Expr) (Evaluator, error) {

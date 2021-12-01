@@ -145,6 +145,19 @@ func TestEvaluatorSuccess(t *testing.T) {
 				5.0,
 			},
 		},
+		{
+			expr: "if(regexp_match(as_string(var1), `^hoge`), 1.8, 3.14)",
+			variables: []evaluator.Variables{
+				{"var1": "hoge"},
+				{"var1": 2.0},
+				{"var1": "5.0hoge"},
+			},
+			expected: []interface{}{
+				1.8,
+				3.14,
+				3.14,
+			},
+		},
 	}
 	for _, c := range cases {
 		t.Run(c.expr, func(t *testing.T) {

@@ -8,19 +8,19 @@ func getCallFunc(funcName string, argEvaluators []Evaluator) (callFunc, error) {
 	switch funcName {
 	case "rate":
 		if len(argEvaluators) != 2 {
-			return nil, fmt.Errorf("rate() func is expected 2 args, but given %d args", len(argEvaluators))
+			return nil, newNumOfArgumentsMismatchError(funcName, 2, len(argEvaluators))
 		}
 		return rateCallFunc, nil
 	case "coalesce":
 		return coalesceCallFunc, nil
 	case "as_numeric":
 		if len(argEvaluators) != 1 {
-			return nil, fmt.Errorf("as_numeric() func is expected 1 arg, but given %d args", len(argEvaluators))
+			return nil, newNumOfArgumentsMismatchError(funcName, 1, len(argEvaluators))
 		}
 		return asNumericCallFunc, nil
 	case "as_string":
 		if len(argEvaluators) != 1 {
-			return nil, fmt.Errorf("as_string() func is expected 1 arg, but given %d args", len(argEvaluators))
+			return nil, newNumOfArgumentsMismatchError(funcName, 1, len(argEvaluators))
 		}
 		return asStringCallFunc, nil
 	default:
